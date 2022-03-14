@@ -1,0 +1,708 @@
+---
+title: "STA207 Project Report"
+author: "Cindy Li (SID: 913211339)"
+date: "03/14/2022"
+output: 
+  prettydoc::html_pretty:
+    theme: caymen
+    toc: true
+toc-title: "Table of Contents"
+---
+
+# Abstract
+The project is regarding the analysis of factors affecting the Covid-19 cases and deaths, including but not limited to time, location, Covid variants, and vaccination related information, collected by or reported to WHO since the start of the pandemic. For a better understanding, some background information is provided beforehand of the analysis. Since there are tons of questions can be developed from the data and information, two questions of interest are also defined for the project: on one hand, the effects of different WHO regions and Covid-19 variants, such as Delta and Omicron, on new cases will be analyzed; on the other hand, the influences of vaccination related factors, including total vaccinations number of a country, persons fully vaccinated of that country, country's first vaccine date, and number of vaccine types used, on preventing COVID-19 spreads will be studied. In the first data pre-processing stage, three datasets will be cleaned and manipulated: missing values are handled, variables are selected, dummy variables and categorical values are created with original columns, and data is merged based on the problem statement. After that, some exploratory data analysis are performed: data transformations and outlier detection are done with EDA outputs. Then, assumptions, parameters, effects plots for ANOVA models are obtained and two multi-way ANOVA models are constructed. Based on ANOVA model outputs, causal inference analysis, such as F-tests and t-tests, is conducted. In order check model assumptions, model diagnostic plots are generated. Lastly, the results are discussed for making conclusions and limitations & recommendations for the project are included as well. 
+
+
+# Introduction
+
+This project mainly focuses on analyzing some meaningful real-world topics using COVID-19 related data sets, such as the cases overtime, geographical information, and vaccination records all over the world. Since the start of pandemic, fighting for an end of COVID-19 has became the common hope for people around the world. However, it is noticeable that stories for COVID-19 are developing differently globally. Consequently, people from various regions or countries have to utilize distinct policies and strategies for efficiently defending the virus. Hence, studying the significant factors affecting the spreading and preventions of COVID-19 has been one of the most concerned topics regarding the pandemic. In this project, two questions of interest are also defined for the project: on one hand, the effects of different WHO regions and Covid-19 variants, such as Delta and Omicron, on new cases will be analyzed; on the other hand, the influences of vaccination related factors, including total vaccinations number of a country, persons fully vaccinated of that country, country's first vaccine date, and number of vaccine types used, on preventing COVID-19 spreads will be studied. The data of the project are retrieved from the WHO COVID-19 dashboard. Data pre-processing and manipulation are performed and EDA is done for obtaining helpful insights prior to model constructions. After careful considerations, two ANOVA models will be fitted on data and results are discussed afterwards. Also, sensitivity analysis of models, conclusions, project limitations and recommendations are included as well.
+
+# Background
+
+COVID-19, formally denoted as Coronavirus disease 2019, is a respiratory disease caused by a virus called SARS-CoV-2 and was first discovered in December 2019. It is extremely contagious and capable of spreading at a very high speed. The majority symptoms of COVID-19 are similar to these of the cold and flu, however, some other special symptoms are distinguishable, such as loss of tastes and smells. Most people caught with COVID-19 experienced mild symptoms, however, some people, such as the elderly and people with underlying medical conditions, could be severely ill or dead. Until now, hundreds of thousands of people around world have died from COVID-19. Fortunately, a lot types of vaccines have been in use since late 2020 and were proved to be effective for preventing the spread of COVID-19 to some extent. Nowadays, the vaccines are improving and more and more people are getting vaccinated.
+
+# Questions of Interest
+
+1. Whether there are significant effects of WHO_region and different COVID-19 variants (Delta and Omicron) on the COVID-19 new cases?
+
+2. Whether there are significant effects of total vaccinations, fully vaccinated persons, first vaccine date, or number of vaccine types used on preventing the COVID-19 new cases?
+
+# Data Descriptions
+
+All data for this project are obtained from the WHO Coronavirus  (COVID-19) Dashboard.
+
+1. Daily Cases and Deaths By Date Reported to WHO (Retrieved from: https://covid19.who.int/WHO-COVID-19-global-data.csv)
+   
+|  Variable name   | Description  |
+|  ----  | ----  |
+| `Date_reported`  | Date of reporting to WHO |
+| `Country_code `  | ISO Alpha-2 country code |
+| `Country`  | Country, territory, area |
+| `WHO_region`  | WHO regional offices |
+| `New_cases`  | New confirmed cases |
+| `Cumulative_cases`  | Cumulative confirmed cases |
+| `New_deaths`  | New confirmed deaths |
+| `Cumulative_deaths`  | Cumulative confirmed deaths |
+   
+2. Latest Reported Counts of Cases and Deaths (Retrieved from: https://covid19.who.int/WHO-COVID-19-global-table-data.csv)
+
+|  Variable name   | Description  |
+|  ----  | ----  |
+| `Name`  | Country, territory, area |
+| `Cases_cumulative total `  | Cumulative confirmed cases reported to WHO to date |
+| `Cases - cumulative total per 100000 population`  | Cumulative confirmed cases reported to WHO to date per 100,000 population |
+| `Cases - newly reported in last 7 days`  | New confirmed cases reported in the last 7 days. Calculated by subtracting previous cumulative case count (8 days prior) from current cumulative cases count |
+| `Cases - newly reported in last 7 days per 100000 population`  | New confirmed cases reported in the last 7 days per 100,000 population |
+| `Cases - newly reported in last 24 hours`  | Cumulative confirmed cases |
+| `Deaths - cumulative total`  | Cumulative confirmed deaths reported to WHO to date |
+| `Deaths - cumulative total per 100000 population`  | Cumulative confirmed deaths reported to WHO to date per 100,000 population |
+| `Deaths - newly reported in last 7 days`  | New confirmed deaths reported in the last 7 days. Calculated by subtracting previous cumulative death count (8 days prior) from current cumulative deaths count |
+| `Deaths - newly reported in last 7 days per 100000 population`  |  New confirmed deaths reported in the last 7 days per 100,000 population |
+| `Deaths - newly reported in last 24 hours`  | New confirmed deaths reported in the last 24 hours. Calculated by subtracting previous cumulative death count from current cumulative deaths count |
+
+3. Vaccination Data (Retrieved from: https://covid19.who.int/who-data/vaccination-data.csv)
+
+|  Variable name   | Description  |
+|  ----  | ----  |
+| `COUNTRY`  | Country, territory, area |
+| `ISO3 `  | ISO Alpha-3 country code |
+| `WHO_region`  | WHO regional offices |
+| `DATA_SOURCE`  | Indicates data source: - REPORTING: Data reported by Member States, or sourced from official reports - OWID: Data sourced from Our World in Data: https://ourworldindata.org/covid-vaccinations |
+| `DATE_UPDATED`  | Date of last update |
+| `TOTAL_VACCINATIONS`  | Cumulative total vaccine doses administered |
+| `PERSONS_VACCINATED_1PLUS_DOSE`  | Cumulative number of persons vaccinated with at least one dose |
+| `TOTAL_VACCINATIONS_PER100`  | Cumulative total vaccine doses administered per 100 population |
+| `PERSONS_VACCINATED_1PLUS_DOSE_PER100`  | Cumulative persons vaccinated with at least one dose per 100 population |
+| `PERSONS_FULLY_VACCINATED`  | Cumulative number of persons fully vaccinated |
+| `PERSONS_FULLY_VACCINATED_PER100`  | Cumulative number of persons fully vaccinated per 100 population |
+| `VACCINES_USED`  |  Combined short name of vaccine: “Company - Product name” |
+| `FIRST_VACCINE_DATE`  | Date of first vaccinations. Equivalent to start/launch date of the first vaccine administered in a country |
+| `NUMBER_VACCINES_TYPES_USED`  | Number of vaccine types used per country, territory, area |
+
+   
+# Data Preprocessing
+```{r, echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(DT)
+library(knitr)
+library(gridExtra)
+library(gplots)
+library(stats)
+library(prettydoc)
+```
+
+```{r, echo=FALSE, results='hide'}
+#import the three data sets mentioned
+total <- read.csv('/Users/Cindy/Desktop/STA 207/proj/Data/WHO-COVID-19-global-data.csv')
+newly <- read.csv('/Users/Cindy/Desktop/STA 207/proj/Data/WHO-COVID-19-global-table-data.csv')
+vac <- read.csv('/Users/Cindy/Desktop/STA 207/proj/Data/vaccination-data.csv')
+```
+
+## Missing Values
+First of all, all three datasets are inspected to check whether there is any missing value and decide the necessity of removal. For the first dataset, which is the overall cases by countries over time, there are 770 missing values and all of them belong to the 'Country_code' column. Since the country code won't be used for future analysis and is not important to the project, there is no need to clean missingness for this dataset. After inspecting the second dataset, the entire column for newly deaths in last 24hr is missing and so to be removed from the data. Besides, there are only 5 NAs from different columns and they are removed from the data as well. From the inspection of the vaccination data, there are 3 NAs in each of the following columns respectively: PERSONS_VACCINATED_1PLUS_DOSE', 'PERSONS_FULLY_VACCINATED', 'PERSONS_FULLY_VACCINATED_PER100', and  'NUMBER_VACCINES_TYPES_USED'. Since the data is aggregated from other sources, it is normal for it to have missingness. In order to reduce the ambiguity of the data, all the missing values are removed.
+
+```{r, echo=FALSE, results='hide'}
+#first data set: overall cases by country
+#check the na's in each column
+#since all the na values are in the country code, there is no need to remove them
+sapply(total, function (x) sum(is.na(x)))
+
+#second data set: cumulative & newly reported cases
+#after checking the na's, we realized that the entire newly deaths in last 24hrs column. Thus, we remove the column from data frame.
+sapply(newly, function (x) sum(is.na(x)))
+latest <- newly[1:9]
+latest <- na.omit(latest)
+
+#third data set: vaccination info (doses, date, brands, etc.) by country
+#checking missing values
+sapply(vac, function (x) sum(is.na(x)))
+vac <- na.omit(vac)
+```
+
+## Data Manipulations
+### Daily Cases and Deaths by Date Reported to WHO
+#### Variable Selections & Groupings & Dummy Variables
+
+First of all, the columns that are not related to the first question of interest were dropped out from the data frame. Then, in order to investigate the effect from WHO_region by date, the entire data set was grouped by the "Date_reported" and "WHO_region" variables. 
+
+In order to study the effects from the presences of different COVID-19 variants, the Delta and Omicron variants were selected. After researching for major variants and their timelines, two dummy variables were created based on whether the date reported was after the presence of that variant or not: if at the reporting time, such type of variant was already existing, label the value as 1 and otherwise 0.
+
+The first few lines of the preprocessed data frame for the first question of interest was displayed as below:
+
+```{r, echo=FALSE}
+#select the columns needed
+total <- select(total, c('Date_reported', 'WHO_region', 'New_cases', 'New_deaths', 'Cumulative_cases', 'Cumulative_deaths'))
+
+#group by WHO_regions
+region <- total %>%
+          group_by(Date_reported, WHO_region) %>%
+          summarise(New_cases=sum(New_cases), New_deaths=sum(New_deaths), 
+                    Cumulative_cases=sum(Cumulative_cases), Cumulative_deaths=sum(Cumulative_deaths), .groups = 'drop')
+```
+
+```{r, echo=FALSE}
+#create dummy variables for delta and omicron variants: whether the presence of delta/omicron has significant effect on cases/deaths?
+#Earliest start date of Delta variant: 2020-10-01
+region['Delta'] <- ifelse((as.Date(region$Date_reported) - as.Date('2020-10-01')) > 0, 1, 0)
+
+#Earliest start date of Omicron variant: 2021-11-24
+region['Omicron'] <- ifelse((as.Date(region$Date_reported) - as.Date('2021-11-24')) > 0, 1, 0)
+datatable(select(region, c(1, 2, 3, 7, 8)), options = list(pageLength = 5))
+```
+
+### Latest Reported Counts of Cases and Deaths & Vaccination Data
+#### Variable Selections & Categorizations
+Since the two datasets will be merged for model constructions but they are indexed on different columns, the index for global table data is reset. After that, the columns of analytics interest are selected and renamed as: 'Country', 'Cumulative_cases_per100000', 'Weekly_cases_per100000', 'Cumulative_deaths_per100000', 'Weekly_deaths_per100000'. 
+
+The columns of modeling interest are also selected from related to second question of interest from vaccination data and labeled factors into categorical data, which are 'TOTAL_VACCINATIONS_PER100', 'PERSONS_FULLY_VACCINATED_PER100', 'FIRST_VACCINE_DATE', and 'NUMBER_VACCINES_TYPES_USED'. In order to find margins for categorizing these four variables in to categorical variables with less factor levels, summary statistics of them are generated as following:
+
+|        |TOTAL_VACCINATIONS|PERSONS_FULLY_VACCINATED|NUMBER_VACCINES_TYPES_USED|
+| ------ |:----------------:|:----------------------:|-------------------------:|
+| Min.   |   0.085          |  0.067                 | 1.000                    |
+| 1st Q  |  59.004          | 28.025                 | 2.000                    |  
+| Median | 120.165          | 51.645                 | 4.000                    |  
+| Mean   | 114.669          |  7.952                 | 3.919                    |  
+| 3rd Q  | 167.951          | 70.646                 | 5.000                    |  
+| Max.   | 331.952          | 20.931                 | 11.000                   |
+
+
+1) Total vaccinations per 100: High(>168.463), Normal(60.054, 168.463), Low(<60.054)
+
+2) Persons fully vaccinated per 100: High(>70.795), Normal(28.046, 70.795), Low(<=28.046)
+
+3) Number of vaccines used per country: Small(<=2 types), Medium(3, 4, 5), Large(>5)
+
+4) The first vaccine date values are categorized into Early, Normal, or Late by sorting all dates and equally dividing them into three parts.
+
+The pre-processed and merged data is displayed below:
+
+```{r, echo = FALSE}
+#since the cases over population data is indexed on country names, reset the index
+case_pop <- cbind(Country = rownames(newly), newly)
+rownames(case_pop) <-NULL
+
+#select columns will be used for analysis
+case_pop <- select(case_pop, c(1,5,7,10,12))
+
+#change column names
+cols <- c('Country', 'Cumulative_cases_per100000', 'Weekly_cases_per100000', 'Cumulative_deaths_per100000', 'Weekly_deaths_per100000')
+colnames(case_pop) <- cols
+```
+
+
+```{r, echo=FALSE, results='hide'}
+#select columns for analysis
+vaccination <- select(vac, c(1,3,8,11,13,14))
+
+#assign levels to total vaccinations per 100, persons fully vaccinated per 100, first vaccine date
+summary(vaccination)
+```
+
+```{r, echo=FALSE}
+#total vaccinations per 100: high(>168.463), normal(60.054, 168.463), low(<60.054)
+vaccination$TOTAL_VACCINATIONS_PER100 <- cut(vaccination$TOTAL_VACCINATIONS_PER100, 
+                                             breaks = c(-Inf, 60.054, 168.463, Inf), labels = c('Low','Medium','High'))
+#persons fully vaccinated per 100: high(>70.795), normal(28.046, 70.795), low(<=28.046)
+vaccination$PERSONS_FULLY_VACCINATED_PER100 <- cut(vaccination$PERSONS_FULLY_VACCINATED_PER100, 
+                                             breaks = c(-Inf,28.046, 70.795, Inf), labels = c('Low','Medium','High'))
+#first vaccination date: early(), normal(), late()
+#we first sort the date
+vaccination$FIRST_VACCINE_DATE <- as.Date(vaccination$FIRST_VACCINE_DATE, format="%Y-%m-%d")
+vac_sorted <- arrange(vaccination, FIRST_VACCINE_DATE)
+
+#assign according levels to the first vaccine date
+levels <- c()
+for (i in 1:nrow(vac_sorted)){
+  if (i < 77){
+      levels[i] = 'Early'
+    } else if (i > 152){
+      levels[i] =  'Late'
+    } else {
+      levels[i] = 'Normal'
+    }
+}
+vac_sorted$FIRST_VACCINE_DATE <- levels
+
+#categorize number of vaccines used per country into small(<=2 types), medium(3, 4, 5), large(>5)
+vac_sorted$NUMBER_VACCINES_TYPES_USED <- cut(vaccination$NUMBER_VACCINES_TYPES_USED, 
+                                             breaks = c(-Inf,3, 6, Inf), labels = c('Small','Medium','Large'))
+```
+
+```{r, echo=FALSE}
+#merge the two data sets
+vac_cases <- select(merge(case_pop,vac_sorted, by.x = 'Country', by.y = 'COUNTRY'), c(1, 3, 6, 7, 8, 9, 10))
+datatable(vac_cases, options = list(pageLength = 5))
+```
+## Data Transformations
+Noted that the normality assumptions for response variables must be satisfied prior to fitting ANOVA models, the distributions for these columns have to be checked. If the distributions are not normal, some transformation techniques need to be utilized for making them normal distributions. There are two response variables for this project in total: 'New_cases' from WHO-COVID-19-global-data for the first question of interest and 'Cases - newly reported in last 7 days per 100000 population' (which has been renamed as 'Weekly_cases_per100000' during the data pre-processing stage) from WHO-COVID-19-global-table-data for the second question of interest. The newly reported cases in last 7 days was selected as response variable for studying the effect of vaccination related information instead of the cumulative cases:since the timelines for vaccination progress in different countries are different case by case, it would be more reasonable to use the recent data to accommodate countries beginning vaccination procedures late. 
+
+First of all, the histogram for new cases was generated, which clearly indicates that the data not normally distributed since there is a heavy right tail. In order to resolve the right tail issue, a log transformation on the data was attempted. However, the distribution was still skewed a lot potentially caused by too many zero values. Considering that the new cases are cumulative thus zeros contributes little to the overall meaning of the model, all zero values in the column were removed and a log transformation was applied then. As a result, the transformed data seemed to be close to normal distribution despite it is still a bit left-tailed. For the sake of preventing over-fitting of the data, no further transformation is conducted and the left tail will be take cared of in later outlier detection and removal section.
+
+Similarly, the histogram for new weekly reported cases per 100000 population was obtained as well. It is shown that normal distribution of data was not attained either from it histogram, so a log transformation is done on the data. Note that observations with zeros were also dropped to prevent severe skewness. As a result, the transformed data attained a normal distribution. 
+
+```{r, fig.cap = 'Histograms of New_cases Before and After Log Transformation', fig.width=8, fig.height=4, fig.align='center', echo=FALSE}
+#plot the histograms for response variables to see whether there are any transformations needed
+par(mfrow = c(1, 2))
+hist(region$New_cases)
+
+#we realized that there too many zeros, thus we can consider to drop all the zeros.
+region <- region[region$New_cases > 0,  ]
+
+#since the distributions of the responsible variables have heavy right tails, we may consider the log transformations
+hist(log(region$New_cases+1))
+```
+
+```{r, echo=FALSE, results='hide'}
+#we realized that the log transformation didn't 
+#conduct the transformation
+region$New_cases <- log(region$New_cases + 1)
+```
+
+```{r, fig.cap = 'Histograms of Weekly_cases_per100000 Before and After Log Transformation', fig.width=8, fig.height=4, fig.align='center', echo=FALSE}
+#we realized that there too many zeros, thus we can consider to drop all the zeros.
+vac_cases <- vac_cases[vac_cases$Weekly_cases_per100000 > 0,  ]
+
+par(mfrow = c(1, 2))
+hist(vac_cases$Weekly_cases_per100000)
+hist(log(vac_cases$Weekly_cases_per100000))
+```
+
+```{r, echo=FALSE}
+#transform the data using log
+vac_cases$Weekly_cases_per100000 <- log(vac_cases$Weekly_cases_per100000 + 1)
+```
+
+# Exploratory Data Analysis
+After completing the previous basic data pre-processings, some visualizations were rendered using the tided-up data for gaining more insights before selecting and fitting models. In this section, time series graphs of cumulative new cases w.r.t to WHO regions and box plots for categorical variables were generated.
+
+## Time Series Plots: Covid-19 Cases by Country
+
+Recalled that the cases by dates were grouped by WHO regions from previous part. Here, the cumulative cases, new cases, cumulative deaths, and new deaths over time for 7 WHO regions were plotted respectively to visualize the general trends of all kinds of cases records in different regions.
+
+The daily new cases time series plots for different WHO regions shows that there are periodic fluctuations in the trends. However, the general trends follow exponential growths at the very beginning of the pandemic and stabilize as time passed by(although there were slight increases and decreases within the stable curve). There are no significant differences among the trends for those WHO regions; however, Region of the Americas(AMRO) and European Region (EURO) displayed higher numbers of new cases daily while African Region(AFRO) has a lower number of daily cases.
+
+```{r, fig.cap = 'Time Series Plot for Daily New Cases of Different WHO Regions', fig.width=8, fig.height=4, fig.align='center', echo=FALSE}
+#time series plot of new_cases overtime by WHO_regions
+ggplot(region, aes(x=Date_reported, y=New_cases, colour=WHO_region, group = WHO_region)) +
+                            geom_line() + theme_bw()
+```
+
+
+The curves for new deaths of COVID-19 seems to be stabilized a bit earlier than that of the new cases. However, there are significant fluctuations along the general trends for AMRO and EURO, which are also at a higher numbers compared to other WHO regions. It is shown that there are multiple surges in deaths from COVID-19 in AMRO and EURO. After careful inspections, the surges are the same as reported in news. 
+
+```{r, fig.cap = 'Time Series Plot for Daily New Deaths of Different WHO Regions', fig.width=8, fig.height=4, fig.align='center', echo=FALSE}
+#time series plot of new_deaths overtime by WHO_regions
+ggplot(region, aes(x=Date_reported, y=New_deaths, colour=WHO_region, group = WHO_region)) +
+                            geom_line() + theme_bw()
+```
+
+
+The cumulative cases time series also displayed similar trend as shown in the previous daily plots: AMRO and EURO have the highest number and the rapidest increases in the cumulative cases. Overall, the growth rates of cumulative cases for all regions follow a increasing trend, which might be proved by the discoveries of Delta and Omicron variants (that are more contagious than previous variants).
+
+```{r, fig.cap = 'Time Series Plot for Cumulative Cases of Different WHO Regions', fig.width=8, fig.height=4, fig.align='center', echo=FALSE}
+#time series plot of Cumulative_cases overtime by WHO_regions
+ggplot(region, aes(x=Date_reported, y=Cumulative_cases, colour=WHO_region, group = WHO_region)) +
+    geom_line() + 
+    theme_bw()
+```
+
+It is even more obvious that the cumulative deaths for AMRO, followed by EURO, are significantly higher than those of other WHO regions, which also corresponds to the findings from previous plots. Combining the four graphs, there seems to be significant differences of both cases and deaths among different WHO regions.
+
+```{r, fig.cap = 'Time Series Plot for Daily Cumulative Deaths of Different WHO Regions', fig.width=8, fig.height=4, fig.align='center', echo=FALSE}
+#time series plot of Cumulative_deaths overtime by WHO_regions
+ggplot(region, aes(x=Date_reported, y=Cumulative_deaths, colour=WHO_region, group = WHO_region)) +
+    geom_line() + 
+    theme_bw()
+```
+
+
+## Boxplots for Categorical Variables
+
+In this section, box plots for categorical input variables for both questions of interest, including 'WHO_regions', 'TOTAL_VACCINATIONS_PER100', 'PERSONS_FULLY_VACCINATED_PER100', 'FIRST_VACCINE_DATE', 'NUMBER_VACCINES_TYPES_USED' are obtained to generate some insights on the data distributions and sample mean differences. 
+
+Firstly, the box plot for new cases versus the 7 WHO regions is rendered as following. The plot indicates that the population means for the treatment levels within the factor are significantly different from each other. Also, there are a noticeable amount of outliers detected from the box plot, which corresponds to the result of data transformation in previous section. 
+
+```{r, fig.cap = 'Group Box Plots for New Cases vs WHO regions', fig.width=8, fig.height=6, fig.align='center', echo=FALSE}
+vals <- boxplot(New_cases ~ WHO_region, data = region, main="Boxplots for new cases vs WHO regions", 
+        xlab="WHO Regions", ylab="New Cases", col="orange", border="black")
+```
+### Outliers Detection & Removal
+
+Considering the fact that these outliers have largely affected the distribution of response variable 'New_cases' and they don't account for large portion of the entire data, they were decided to be removed from the data in order to ensure the model assumptions are satisfied. The outliers were marked from box plot and observations containing these data points were dropped from the data. After the removal procedure, a new box plot is obtained to show that the majority of outliers were gone. The new data will be then used for fitting ANOVA model in later section. 
+
+```{r, fig.cap = 'Group Box Plots for New Cases vs WHO Regions W/O Outliers', fig.width=8, fig.height=6, fig.align='center', echo=FALSE}
+#detect ourliers from boxplot
+outliers <- vals$out
+
+#remove outliers from region dataset
+region_new <- region[!region$New_cases %in% outliers, ]
+
+#plot new boxplot after removing outliers
+boxplot(New_cases ~ WHO_region, data = region_new, main="Boxplots for new cases vs WHO regions after outliers removal", 
+        xlab="WHO Regions", ylab="New Cases", col="orange", border="black")
+```
+
+With same methodology, four box plots of categorized total vaccinations, persons fully vaccinated, first vaccine date, and number of vaccines used were plotted against the newly reported cases from last 7days, respectively. As indicated in the box plots, there are few outliers after the data transformations done earlier, so no removal is needed at this moment. The population means are different significantly among levels for total vaccinations, persons fully vaccinated, and first vaccine date. However, the population means for levels within vaccine types used are almost the same. 
+
+```{r, fig.cap = 'Group Box Plots for Vaccination Related Facotrs vs New Cases from Last Week',fig.width=8, fig.height=6, fig.align='center', echo=FALSE}
+#boxplots for new cases
+par(mfrow = c(2, 2))
+boxplot(Weekly_cases_per100000 ~ TOTAL_VACCINATIONS_PER100, data = vac_cases, main="Boxplots for each total vaccinations level", 
+        xlab="Total Vaccinations Level", ylab="Newly Reported Cases Last 7 Days (per 100000 population)", col="pink", border="black")
+
+boxplot(Weekly_cases_per100000 ~ PERSONS_FULLY_VACCINATED_PER100, data = vac_cases, main="Boxplots for each fully vaccinated level", 
+        xlab="Fully Vaccinated Level", ylab="Newly Reported Cases Last 7 Days (per 100000 population)", col="pink", border="black")
+
+boxplot(Weekly_cases_per100000 ~ FIRST_VACCINE_DATE, data = vac_cases, main="Boxplots for each first vaccine date level", 
+        xlab="First Vaccine Date Level", ylab="Newly Reported Cases Last 7 Days (per 100000 population)", col="pink", border="black")
+
+boxplot(Weekly_cases_per100000 ~ as.factor(NUMBER_VACCINES_TYPES_USED), data = vac_cases, main="Boxplots for each vaccine types used level", 
+        xlab="Vaccine Types Level", ylab="Newly Reported Cases Last 7 Days (per 100000 population)", col="pink", border="black")
+```
+# Models
+In this section, two ANOVA models (three-way and four-way) are constructed for two question of interest of the project respectively. 
+
+## Three-Way ANOVA Model (1st Question of Interest)
+This three-way ANOVA model with factors WHO_region, Delta, and Omicron is essentially the same as a two-way ANOVA with only WHO_region and Variants (with two factor levels: Delta and Omicron). Since the variants were encoded as two dummy variables during the data manipulation stage, they were treated with a three way ANOVA. Since the two dummy variables are essentially one variable, there are no interaction terms associated with these two dummies (Delta:Omicron or WHO_region:Delta:Omicron) needed for this ANOVA model for the reason that they add no meaning. As a result, there are only three main effects and two interaction terms included in the model. For this model, three main effect plots and two interaction plots will be generated for an overview of the significant levels of factors and summary of ANOVA outputs is obtained for a closer analysis. 
+
+### Model Assumptions & Parameters
+Three-way ANOVA assumptions: Normality of data, homogeneity of variance, and indenpendence of observations.
+
+<p style="text-align: center;"> **$Y_{ijkl}$ = $\mu...$ + $\alpha_i$ + $\beta_j$ + $\gamma_k$ + $\alpha\beta_{ij}$ + $\alpha\gamma_{ik}$ + $\epsilon_{ijkl}$** </p>  
+    
+i  = 1, 2,..., 7; j = 1, 2; k  = 1, 2; l = 1, ..., n, where n is the length of first data frame;
+    
+where $\mu...$ = $\sum_{i}\sum_{j}\sum_{k}w_{ijk}\mu_{ijk}$, $\alpha_i$ = $\mu_i$ - $\mu...$, $\beta_j$ = $\mu_j$ - $\mu...$, $\gamma_k$ = $\mu_k$ - $\mu...$, $w_{ijk}$ = $n_{ijk}$/$n_{T}$
+    
+$\mu_i$ = within-group sample means of WHO region
+
+$\mu_j$ = within-group sample means of Delta variant
+    
+$\mu_k$ = within-group sample means of Omicron variant
+    
+$\mu_{ijk}$ = between-group sample means of interaction factors
+    
+$\mu...$ = population mean
+    
+$\epsilon_{ijkl}$ ~ i.i.d N(0, $\sigma^{2}$)
+
+### Factor & Interaction Effect Plots
+
+From the main effect plot for WHO_region, it could be seen that the means and ranges of new cases for different factor levels from WHO_region are significantly different from each other, especially for the 'Other' level. Thus, it is fair to say that there are significant differences among new cases for different WHO regions (in other words, WHO region levels have significant effects on new cases.)
+
+From the main effect plot for Delta variant, the means and ranges of new cases for different factor levels within the dummy variable Delta are different. Thus, it is reasonable to conclude that there are significant differences among new cases whether the Delta variant is present or not (in other words, Delta existences have significant effects on new cases.)
+
+From the main effect plot for Omicron, the means and ranges of new cases for different factor levels from it are different. Thus, significant differences among new cases before and after the presence of Omicron variant are observed (in other words, presence of Omicron variant have significant effects on new cases.)
+
+```{r, fig.cap = 'Main Effects Plots for First Model', fig.width=18, fig.height=4, fig.align='center', echo=FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(1, 3))
+#main effect plot: WHO regions
+plotmeans(New_cases ~ WHO_region, data = region_new, xlab="WHO Regions", ylab="New Cases", main="Main effect, WHO Regions", cex.lab=1.5)
+
+#main effect plot: Delta variant
+plotmeans(New_cases ~ as.factor(Delta), data = region_new, xlab="Delta", ylab="New Cases", main="Main effect, WHO Regions", cex.lab=1.5)
+
+#main effect plot: Omicron variant
+plotmeans(New_cases ~ as.factor(Delta), data = region_new, xlab="Omicron", ylab="New Cases", main="Main effect, WHO Regions", cex.lab=1.5)
+```
+The interaction effect plot for WHO_regions and Delta indicates that the differences among ranges of new cases for different combinations of factor levels from them are obvious, which means the interaction effect between two factors might be significant.
+
+The interaction effect plot for WHO_regions and Omicron indicates that the differences among ranges of new cases for different combinations of factor levels from them are also noticeable, which means the interaction effect between two factors might be significant as well.
+
+```{r, fig.cap = 'Interation Effects Plots for First Model', fig.width=12, fig.height=4, fig.align='center', echo=FALSE}
+#interaction plots
+par(mfrow = c(1, 2))
+interaction.plot(region_new$WHO_region, region_new$Delta, region_new$New_cases ,cex.lab=1.5, ylab="New Cases", main="Interaction effect, WHO Regions & Delta", cex.lab=1.5)
+interaction.plot(region_new$WHO_region, region_new$Omicron, region_new$New_cases ,cex.lab=1.5, ylab="New Cases", main="Interaction effect, WHO Regions & Omicron", cex.lab=1.5)
+```
+
+
+### Model Results
+After main and interaction effect plots are plotted, the ANOVA model was fitted on data and the output from R is displayed as below. 
+
+|                    | Df   | SS    | MS    | F value | Pr(>F)  |
+| ------------------ |:----:|:-----:|:-----:|:-------:| -------:|
+| WHO_region         | 6    | 6132  | 1022  | 417.74  | <2e-16  |
+| Delta              | 1    | 5299  | 5299  | 2166.22 | <2e-16  |
+| Omicron            | 1    | 217   | 217   | 88.64   | <2e-16  |
+| WHO_region:Delta   | 1    | 217   | 217   | 88.64   | <2e-16  |
+| WHO_region:Omicron | 1    | 217   | 217   | 88.64   | <2e-16  |
+| Residuals          | 4427 | 10830 | 2     |         |         |
+
+Under the significance level of 0.05, it is fair to conclude that:
+
+The main effects of WHO_region, Delta variant, and Omicron variant on the model are significant since all their p-values are smaller than 2e-16, which are also smaller than the significant level 0.05;
+
+The interaction effects of WHO_region vs Delta and WHO_region vs Omicron are both significant as well due to their extremely small p-values (<0.05).
+
+```{r, echo=FALSE, results='hide'}
+anova1.fit<- aov(New_cases ~ WHO_region*Delta*Omicron, data=region_new)
+summary(anova1.fit)
+```
+
+
+## Four-Way ANOVA Model (2nd Question of Interest)
+In order to study the effects of factors associated with vaccinations on the new COVID-19 cases, another four-way ANOVA model was fitted on the merged second and third dataset. In this model, the response variable is the 'Weekly_cases_per100000', while the input categorical variables are 'TOTAL_VACCINATIONS_PER100',  'PERSONS_FULLY_VACCINATED_PER100', 'FIRST_VACCINE_DATE', and 'NUMBER_VACCINES_TYPES_USED'. The newly reported cases from last seven days were selected as the response variable considering the fact that the vaccination timelines for different countries are different. Hence, the most recent records should be better representatives for studying the effects of vaccinations. All four input variables were pre-processed and turned into categorical values in the data pre-processing section. A full ANOVA model with all levels of interaction terms is fitted then a reduced model is settled after removing the insignificant terms. Only the reduced model will be displayed as final result in the following section. 
+
+### Model Assumptions & Parameters
+Four-way ANOVA assumptions: Normality of data, homogeneity of variance, and indenpendence of observations.
+
+<p style="text-align: center;"> **$Y_{ijklm}$ = $\mu...$ + $\alpha_i$ + $\beta_j$ + $\gamma_k$ + $\delta_l$ + $\alpha\beta_{ij}$ + $\alpha\gamma_{ik}$ + $\alpha\delta_{il}$ + $\beta\gamma_{jk}$ + $\beta\delta_{jk}$ + $\gamma\delta_{kl}$ + $\epsilon_{ijklm}$**</p>
+    
+i  = 1, 2, 3; j = 1, 2, 3; k  = 1, 2, 3; l = 1, 2, 3; m = 1, ..., n, where n is the length of second merged data frame;
+    
+where $\mu...$ = $\sum_{i}\sum_{j}\sum_{k}\sum_{l}w_{ijkl}\mu_{ijkl}$, $\alpha_i$ = $\mu_i$ - $\mu....$, $\beta_j$ = $\mu_j$ - $\mu....$, $\gamma_k$ = $\mu_k$ - $\mu....$, $\delta_l$ = $\mu_l$ - $\mu....$, $w_{ijkl}$ = $n_{ijkl}$/$n_{T}$
+    
+$\mu_i$ = within-group sample means of TOTAL_VACCINATIONS_PER100
+
+$\mu_j$ = within-group sample means of PERSONS_FULLY_VACCINATED_PER100
+    
+$\mu_k$ = within-group sample means of FIRST_VACCINE_DATE
+
+$\mu_l$ = within-group sample means of NUMBER_VACCINES_TYPES_USED
+    
+$\mu_{ijkl}$ = between-group sample means of interaction factors
+    
+$\mu....$ = population mean
+    
+$\epsilon_{ijklm}$ ~ i.i.d N(0, $\sigma^{2}$)
+
+### Factor & Interaction Effect Plots
+From the main effect plot for TOTAL_VACCINATIONS_PER100, it could be seen that the means and ranges of weekly new cases for different factor levels from TOTAL_VACCINATIONS_PER100 are significantly different, especially for the 'Low' level. Thus, it is fair to say that there are significant differences among weekly new cases for countries with different total vaccinations per 100000 populations.
+
+From the main effect plot for PERSONS_FULLY_VACCINATED_PER100, the means and ranges of new cases for different factor levels within it are different. Thus, it is reasonable to conclude that there are significant differences among weekly new cases for different factor levels in PERSONS_FULLY_VACCINATED_PER100 (in other words, persons fully vaccinated per 100000 populations have significant effects on weekly new cases.)
+
+From the main effect plot for FIRST_VACCINE_DATE, the means and ranges of weekly newly reported cases for different factor levels from it are different. Thus, significant differences among weekly new cases are observed in different levels in first vaccine date of countries. 
+
+From the main effect plot for NUMBER_VACCINES_TYPES_USED, the means and ranges of weekly new cases for different factor levels from it are similar. Thus, there is no significant difference among weekly new cases for different factor levels in NUMBER_VACCINES_TYPES_USED.
+
+```{r, fig.cap = 'Main Effects Plots for Second Model', fig.width=12, fig.height=8, fig.align='center', echo = FALSE}
+par(mfrow = c(2, 2))
+#main effect plot: Total vaccinations
+plotmeans(Weekly_cases_per100000 ~ TOTAL_VACCINATIONS_PER100, data = vac_cases, xlab="TOTAL_VACCINATIONS_PER100", ylab="Weekly_cases_per100000", main="Main effect, TOTAL_VACCINATIONS_PER100", cex.lab=1.5)
+
+#main effect plot: persons fully vaccinated
+plotmeans(Weekly_cases_per100000 ~ PERSONS_FULLY_VACCINATED_PER100, data = vac_cases, xlab="PERSONS_FULLY_VACCINATED_PER100", ylab="Weekly_cases_per100000", main="Main effect, PERSONS_FULLY_VACCINATED_PER100", cex.lab=1.5)
+
+#main effect plot: 
+plotmeans(Weekly_cases_per100000 ~ FIRST_VACCINE_DATE, data = vac_cases, xlab="FIRST_VACCINE_DATE", ylab="Weekly_cases_per100000", main="Main effect, FIRST_VACCINE_DATE", cex.lab=1.5)
+
+#main effect plot: Omicron variant
+plotmeans(Weekly_cases_per100000 ~ NUMBER_VACCINES_TYPES_USED, data = vac_cases, xlab="NUMBER_VACCINES_TYPES_USED", ylab="Weekly_cases_per100000", main="Main effect, NUMBER_VACCINES_TYPES_USED", cex.lab=1.5)
+```
+
+Among all the interaction plots, it seems that the interaction effects of TOTAL_VACCINATIONS_PER100 vs PERSONS_FULLY_VACCINATED_PER100, TOTAL_VACCINATIONS_PER100 vs FIRST_VACCINE_DATE, and PERSONS_FULLY_VACCINATED_PER100  vs FIRST_VACCINE_DATE are more significant than these from other combinations. It is noticeable that the differences in weekly new cases for various levels from the three interaction terms mentioned above are more observable compared to other interaction terms.
+
+```{r, fig.cap = 'Interaction Effects Plots for Second Model', fig.width=12, fig.height=12, fig.align='center', echo = FALSE}
+par(mfrow = c(3, 2))
+#interaction plots
+interaction.plot(vac_cases$TOTAL_VACCINATIONS_PER100, vac_cases$PERSONS_FULLY_VACCINATED_PER100, vac_cases$Weekly_cases_per100000 ,cex.lab=1.5, ylab="Weekly New Cases", main="Interaction Effect, Total Vaccinations vs Persons Fully Vaccinated", cex.lab=1.5)
+
+interaction.plot(vac_cases$TOTAL_VACCINATIONS_PER100, vac_cases$FIRST_VACCINE_DATE, vac_cases$Weekly_cases_per100000 ,cex.lab=1.5, ylab="Weekly New Cases", main="Interaction Effect, Total Vaccinations vs First Vaccine Date", cex.lab=1.5)
+
+interaction.plot(vac_cases$TOTAL_VACCINATIONS_PER100, vac_cases$NUMBER_VACCINES_TYPES_USED, vac_cases$Weekly_cases_per100000 ,cex.lab=1.5, ylab="Weekly New Cases", main="Interaction Effect, Total Vaccinations vs Vaccine Types", cex.lab=1.5)
+
+interaction.plot(vac_cases$PERSONS_FULLY_VACCINATED_PER100, vac_cases$FIRST_VACCINE_DATE, vac_cases$Weekly_cases_per100000 ,cex.lab=1.5, ylab="Weekly New Cases", main="Interaction Effect, Persons Fully Vaccinated vs First Vaccine Date", cex.lab=1.5)
+
+interaction.plot(vac_cases$PERSONS_FULLY_VACCINATED_PER100, vac_cases$NUMBER_VACCINES_TYPES_USED, vac_cases$Weekly_cases_per100000 ,cex.lab=1.5, ylab="Weekly New Cases", main="Interaction Effect, Persons Fully Vaccinated vs Vaccine Types", cex.lab=1.5)
+
+interaction.plot(vac_cases$FIRST_VACCINE_DATE, vac_cases$NUMBER_VACCINES_TYPES_USED, vac_cases$Weekly_cases_per100000 ,cex.lab=1.5, ylab="Weekly New Cases", main="Interaction Effect, First Vaccine Date vs Vaccine Types", cex.lab=1.5)
+```
+
+### Model Results
+Initially, a full model with all level of interactions were obtained. However, the outputs indicated that all terms including and beyond three-way interactions are not significant. Hence, a reduced model with only main effects and two-way interaction terms were then fitted and defined as the official second ANOVA model for this project. The ANOVA output from R is displayed in following table:
+     
+|                                                           | Df  | SS     | MS     | F value | Pr(>F)   |
+| --------------------------------------------------------- |:---:|:------:|:------:|:-------:| --------:|
+|TOTAL_VACCINATIONS_PER100                                  |  2  | 274.4  | 137.21 | 24.643  | 8.24e-10 |
+|PERSONS_FULLY_VACCINATED_PER100                            |  2  |  14.7  |   7.34 |  1.318  | 0.2712   |  
+|FIRST_VACCINE_DATE                                         |  2  | 127.5  |  63.77 | 11.454  | 2.60e-05 |
+|NUMBER_VACCINES_TYPES_USED                                 |  2  |   2.1  |   1.06 |  0.190  | 0.8269   |  
+|TOTAL_VACCINATIONS_PER100:PERSONS_FULLY_VACCINATED_PER100  |  2  |   1.8  |   0.88 |  0.159  | 0.8534   |  
+|TOTAL_VACCINATIONS_PER100:FIRST_VACCINE_DATE               |  3  |  48.4  |  16.14 |  2.898  | 0.0376   |  
+|TOTAL_VACCINATIONS_PER100:NUMBER_VACCINES_TYPES_USED       |  4  |  53.2  |  13.29 |  2.387  | 0.0544   |
+|PERSONS_FULLY_VACCINATED_PER100:FIRST_VACCINE_DATE         |  4  |  34.2  |   8.54 |  1.534  | 0.1960   |  
+|PERSONS_FULLY_VACCINATED_PER100:NUMBER_VACCINES_TYPES_USED |  3  |  31.8  |  10.59 |  1.903  | 0.1323   | 
+|FIRST_VACCINE_DATE:NUMBER_VACCINES_TYPES_USED              |  4  |   4.0  |   1.00 |  0.180  | 0.9486   |  
+|Residuals                                                  | 131 | 729.4  |   5.57 |         |          |
+
+Under the significance level of 0.05, it is safe to make the following conclusions:
+
+The main effect of TOTAL_VACCINATIONS_PER100 on the model are significant since its p-value = 8.24e-10, which is smaller than the significant level 0.05;
+
+The main effect of FIRST_VACCINE_DATE on the model are significant with a p-value = 2.42e-05, which is also smaller than the significant level 0.05;
+
+The interaction effects of TOTAL_VACCINATIONS_PER100 vs FIRST_VACCINE_DATE is significant as well due to its small p-value = 0.0362 < 0.05.
+
+It is noticed that the conclusions made from ANOVA results are slightly different from the observations based on the factor & interaction effect plots. 
+
+```{r, echo=FALSE, results='hide'}
+#fit a full anova model
+anova_temp.fit<- aov(Weekly_cases_per100000 ~ (TOTAL_VACCINATIONS_PER100 + PERSONS_FULLY_VACCINATED_PER100 + FIRST_VACCINE_DATE + NUMBER_VACCINES_TYPES_USED)^3, data=vac_cases)
+summary(anova_temp.fit)
+
+#sicne all the three way reactions are not significant, we fit a reduced model w/o all three way interaction terms
+anova2.fit<- aov(Weekly_cases_per100000 ~ (TOTAL_VACCINATIONS_PER100 + PERSONS_FULLY_VACCINATED_PER100 + FIRST_VACCINE_DATE + NUMBER_VACCINES_TYPES_USED)^2, data=vac_cases)
+summary(anova2.fit)
+```
+
+# Causal Inference Analysis
+In the real world, causal inference always provide meaningful insights to problems by comparing outcomes under different conditions for same samples. In order words, causal inference performs comparisons between potential results using different treatments and controls for same observations. The causal inference is a commonly-used approach for making decisions and taking actions based on outcomes generated by randomized experiments. 
+
+## Three-Way ANOVA Model (1st Question of Interest)
+### F-tests for Main Effects & Interaction Effects
+#### F-test for Main Effect: WHO_region
+An F-test is conducted to test the main effect of WHO_region on the model.
+
+<p style="text-align: center;"> H0: all $\mu_{i..}$'s are the same vs Ha: not all $\mu_{i..}$'s are the same </p>
+
+Test statistic: F* = MSTR/MSE = 1022/2 = 417.74 </p>
+
+Null distribution: Under H0, F ∗ ∼F(6, 4427). </p>
+
+Critical value: F = 2.099 </p>
+
+Decision: F* > F, reject null, there is a significant effect of 'WHO_region' on 'New_cases'. </p>
+
+
+#### F-test for Main Effect: Delta
+An F-test is conducted to test the main effect of Delta on the model.
+
+<p style="text-align: center;"> H0: all $\mu_{.j.}$'s are the same vs Ha: not all $\mu_{.j.}$'s are the same </p>
+
+Test statistic: F* = MSTR/MSE = 5299/2 = 2166.22 </p>
+
+Null distribution: Under H0, F ∗ ∼F(1, 4427). </p>
+
+Critical value: F = 3.841 </p>
+
+Decision: F* > F, reject null, there is a significant effect of 'Delta' on 'New_cases'. </p>
+
+#### F-test for Main Effect: Omicron
+An F-test is conducted to test the main effect of Omicron on the model.
+
+<p style="text-align: center;"> H0: all $\mu_{..k}$'s are the same vs Ha: not all $\mu_{..k}$'s are the same </p>
+
+Test statistic: F* = MSTR/MSE = 217/2 = 88.64 </p>
+
+Null distribution: Under H0, F ∗ ∼F(1, 4427). </p>
+
+Critical value: F = 3.841 </p>
+
+Decision: F* > F, reject null, there is a significant effect of 'Omicron' on 'New_cases'. </p>
+
+
+#### F-test for Interaction Effect: WHO_region vs Delta
+An F-test is conducted to test the interaction effect of WHO_region vs Delta on the model.
+
+<p style="text-align: center;"> H0: all $\mu_{ij.}$'s are the same vs Ha: not all $\mu_{ij.}$'s are the same </p>
+
+Test statistic: F* = MSTR/MSE = 217/2 = 88.64
+
+Null distribution: Under H0, F ∗ ∼F(1, 4427).
+
+Critical value: F = 3.841
+
+Decision: F* > F, reject null, there is a significant effect of interaction between 'WHO_region' and 'Delta' on 'New_cases'.
+
+#### F-test for Interaction Effect: WHO_region vs Omicron
+An F-test is conducted to test the interaction effect of WHO_region vs Delta on the model.
+
+<p style="text-align: center;"> H0: all $\mu_{i.k}$'s are the same vs Ha: not all $\mu_{i.k}$'s are the same </p>
+
+Test statistic: F* = MSTR/MSE = 217/2 = 88.64
+
+Null distribution: Under H0, F ∗ ∼F(1, 4427).
+
+Critical value: F = 3.841
+
+Decision: F* > F, reject null, there is a significant effect of interaction between 'WHO_region' and 'Omicron' on 'New_cases'.
+
+
+## Four-Way ANOVA Model (2nd Question of Interest)
+Based on the ANOVA model result, the main effect of TOTAL_VACCINATIONS_PER100, FIRST_VACCINE_DATE and interaction effect of TOTAL_VACCINATIONS_PER100 vs FIRST_VACCINE_DATE are statistically significant for the model. It is meaningful to identify the levels, or the combination of levels, among these significant terms that have the most significant influences on the newly reported cases from last 7 days. In order to find the "most significant combinations", the Tukey-Kramer family-wise comparison tests were performed and the confidence intervals were obtained and displayed as following. 
+
+For TOTAL_VACCINATIONS_PER100 variable, it seems that the the highest cell mean is generated by comparing the level 'High' and 'Low' and this combination also has the widest range of confidence intervals. This means that the most significant difference is generated from these two levels in the factor. For the FIRST_VACCINE_DATE, the highest cell mean is generated from the 'Late' and 'Normal' levels combination from the factor. The ranges for cell means, however, are almost equal for all level combinations. For the interaction of TOTAL_VACCINATIONS_PER100 and FIRST_VACCINE_DATE, the combinations of 'High:Normal' and 'Low:Late' produces the highest cell mean among all the combinations, while the combinations of 'Low':'Late' and 'Medium':'Early' generates the lowest cell mean.
+
+```{r, fig.cap = 'Tukey Family-wise Confidence Intervals', fig.width=12, fig.height=20, , fig.align='center', echo = FALSE}
+#checking sample size of each group in occupation
+#table(region_new$WHO_region)
+
+#conduct the tukey test, and plot confidence intervals for every pair of means
+T.ci=TukeyHSD(anova2.fit,conf.level = 1-0.05)
+par(mfrow=c(5,2))
+plot(T.ci, las=1 , col="brown")
+```
+
+# Model Diagnostics
+## Three-Way ANOVA Model (1st Question of Interest)
+### Normality
+Recalled that the histogram generated from the original response variable 'New_cases' for the first question of interest was heavily right-tailed, a log transformation has been performed on the response variable. Also, the outliers were detected and removed within the exploratory data analysis section. Hence, the transformed and cleaned response variable's distribution satisfies the normality assumption for this ANOVA model and the histogram can be referred in the data transformation section. Also, as indicated by the QQ-plot, the tails are not heavy and the values distributed along the line, which means the data is approximately normally distributed.
+
+### Independence
+Based on the residuals vs. fitted values plot, it is reasonable to make the conclusion that the observations are independent since the expectations of residuals are around zero and there is no obvious pattern or trend for the values. Thus, the independence of observations assumption is met.
+
+### Equal Variance 
+The residuals vs. fitted values plot also indicated that the variances for error terms are mostly constant.
+
+```{r, fig.cap= 'Model Diagnostic Plots for First Model', fig.width=12, fig.height=5, fig.align='center', echo=FALSE}
+par(mfrow=c(1,2))
+plot(anova1.fit,cex.lab=1.2, which = 1:2)
+```
+
+## Four-Way ANOVA Model (2nd Question of Interest)
+### Normallity
+Similarly, a log transformation has been done on the response variable 'Weekly_new_cases_per100000' since the histogram obtained for the untransformed data also had a heavy right tail. Based on the histogram generated for the transformed data, it's safe to conclude that the normality assumption for the second ANOVA model is also attained. There are a few outliers shown in the QQ-plot, however, the data follows a normal distribution overall.
+
+### Independence
+From the residuals vs fitted plot, the independence assumption is attained based on the fact that the expected values of residuals are around zero. Also, there is no obvious trend shown in the plot.
+
+### Equal Variance
+The homogeneity of variance assumption for the model is satisfied based on the residuals vs fitted values plot, with the fact that there is no significant difference in ranges of the variances.
+
+```{r, fig.cap= 'Model Diagnostic Plots for Second Model', fig.width=12, fig.height=5, fig.align='center', echo=FALSE, warning=FALSE}
+par(mfrow=c(1,2))
+plot(anova2.fit,cex.lab=1.2,which=1:2)
+```
+
+# Discussion & Conclusion
+Based on the outputs from the first ANOVA model, which answers the first question of interest on whether differences in WHO regions and the variants of COVID-19 (Delta and Omicron) have significant effects on the number of new cases. It seems that there are significant differences among number of COVID-10 new cases among these 7 different WHO regions. Among those WHO regions, AMRO and EURO seem to have the highest number of new cases. As for the effects of presences of certain variant on the new cases number, it is shown that both the presences of Delta and Omicron brought bursts of new COVID-19 cases. Also, the combinations of WHO regions versus both variants also have significant effects on the increases of cases. This indicates that, although the Delta and Omicron variants develop differently among WHO regions, they created a increasing trends in the number of new cases.
+
+As for the second question of interest regarding the effects of vaccinations related factors on the recently reported new cases, some of the model results seem to be anti-intuitive. It is tested that only the total vaccinations per 100 population and the first vaccine date of the country, as well as the interaction of these two main effect, have significant influences on the newly reported cases from last week. The effects of different levels among these factor turn to be counter-intuitive: the higher the number of total vaccinations, the more cases reported; also, the later the first vaccinate date, the less new cases reported. The results for total vaccinations might be due to the fact that only fully vaccinated people have higher defensive abilities for the virus. However, vaccinations might make people loosen their alerts for the COVID, while they gathered too much while not having enough antibodies. It is reasonable that the later the first vaccinate date, the less new cases, since vaccinations are not as effective as the time vaccinated.
+
+# Limitations & Recommendations
+First of all, there are too many missing data or data with zeros in the original data retrieved from WHO. The model accuracy could be improved if there could be more completed data. Secondly, there are only two levels for each of the dummy variable used for the first model, which may reduce the accuracy of the model as well. In addition, the method for categorizing the variant time periods are not scientific enough, so there might be cavets in the associated outputs. Then, there are too many factors for the second ANOVA model, which may be improved by introducing blocking for ANOVA model.
+
+# Acknowledgement {-}
+Discussed with: Xinyue Hu, Xiquan Jiang, Bo Zhang, Xiaoran Zhu
+
+# Reference {-}
+
+1) https://covid19.who.int/info
+
+2) https://en.wikipedia.org/wiki/Variants_of_SARS-CoV-2#Variants_of_concern_(WHO)
+
+3) UC Davis Canvas Discovery. (n.d.). Retrieved January 22, 2022, from https://canvas.ucdavis.edu/courses/645257 
+
+4) Notebook on nbviewer. Jupyter Notebook Viewer. (n.d.). Retrieved January 22, 2022, from https://nbviewer.org/github/ChenShizhe/StatDataScience/blob/master/Notes/Chapter4ANOVA.ipynb 
+
+5) Notebook on nbviewer. Jupyter Notebook Viewer. (n.d.). Retrieved January 22, 2022, from https://nbviewer.org/github/ChenShizhe/StatDataScience/blob/master/Notes/Chapter4ANOVAII.ipynb 
+
+6) Notebook on nbviewer. Jupyter Notebook Viewer. (n.d.). Retrieved January 22, 2022, from https://nbviewer.org/github/ChenShizhe/StatDataScience/blob/master/Notes/Chapter2EDA.ipynb 
+
+7) https://www.cdc.gov/coronavirus/2019-ncov/your-health/about-covid-19/basics-covid-19.html
+
+8) https://www.who.int/en/activities/tracking-SARS-CoV-2-variants/
+
+# Appendix - R Code{-}
+
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+```
+
+
+# Session info {-}
+```{r}
+sessionInfo()
+```
